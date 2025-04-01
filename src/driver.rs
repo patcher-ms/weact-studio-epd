@@ -106,11 +106,11 @@ where
         .await?;
         self.command_with_data(command::DATA_ENTRY_MODE, &[flag::DATA_ENTRY_INCRY_INCRX])
             .await?;
-        self.command_with_data(
-            command::BORDER_WAVEFORM_CONTROL,
-            &[flag::BORDER_WAVEFORM_FOLLOW_LUT | flag::BORDER_WAVEFORM_LUT1],
-        )
-        .await?;
+            self.command_with_data(
+                command::BORDER_WAVEFORM_CONTROL,
+                &[flag::BORDER_WAVEFORM_FOLLOW_LUT | flag::BORDER_WAVEFORM_LUT1],
+            )
+            .await?;
         self.command_with_data(command::DISPLAY_UPDATE_CONTROL, &[0x00, 0x80])
             .await?;
         self.command_with_data(command::TEMP_CONTROL, &[flag::INTERNAL_TEMP_SENSOR])
@@ -220,9 +220,18 @@ where
         Ok(())
     }
 
+    /// Powers off the display.
+    pub async fn power_off(&mut self) -> Result<()> {
+        self.command_with_data(command::UPDATE_DISPLAY_CTRL2, &[0x83])
+            .await?;
+        self.command(command::MASTER_ACTIVATE).await?;
+        Ok(())
+    }
+
     /// Put the device into deep-sleep mode.
     /// You will need to call [`Self::wake_up`] before you can draw to the screen again.
     pub async fn sleep(&mut self) -> Result<()> {
+        self.power_off().await?;
         // We can't use send_with_data, because the data function will also wait_until_idle,
         // but after sending the deep sleep command, busy will not be cleared,
         // maybe as a feature to signal the device won't be able to process further instuctions until woken again.
@@ -370,12 +379,12 @@ where
         }
 
         if !self.using_partial_mode {
-            self.command_with_data(command::WRITE_LUT, &lut::LUT_PARTIAL_UPDATE)
-                .await?;
+                self.command_with_data(command::WRITE_LUT, &lut::LUT_PARTIAL_UPDATE)
+                    .await?;
             self.using_partial_mode = true;
         }
         self.command_with_data(command::UPDATE_DISPLAY_CTRL2, &[flag::UNDOCUMENTED])
-            .await?;
+                .await?;
         self.command(command::MASTER_ACTIVATE).await?;
         self.wait_until_idle().await;
         Ok(())
