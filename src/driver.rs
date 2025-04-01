@@ -225,6 +225,7 @@ where
         self.command_with_data(command::UPDATE_DISPLAY_CTRL2, &[0x83])
             .await?;
         self.command(command::MASTER_ACTIVATE).await?;
+        self.wait_until_idle().await;
         Ok(())
     }
 
